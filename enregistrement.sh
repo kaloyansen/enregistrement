@@ -2,6 +2,7 @@
 
 MIDI_DEVICE="20:0"
 OUTDIR="$HOME/$(basename "$0")"
+OUTDIR=$HOME/enregistrement
 LAST_RECORD=$OUTDIR/last.mid
 mkdir $OUTDIR
 STOP_NOTE=24
