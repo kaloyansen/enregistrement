@@ -28,7 +28,8 @@ aseqdump -p "$MIDI_DEVICE" | while read -r line; do
 		rm -f $LAST_RECORD
                 echo recording saved to $OUTFILE
 		ln -s $OUTFILE $LAST_RECORD
-                echo press any key to start a new recording
+                echo standby
+		beep -f 1760 -l 500
                 break
             fi
         done

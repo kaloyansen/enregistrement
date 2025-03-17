@@ -9,8 +9,8 @@ Group=kalo
 WorkingDirectory=/home/kalo/enregistrement
 # Restart=always
 Environment="XDG_RUNTIME_DIR=/run/user/$(id -u kalo)"
-StandardOutput=append:/home/kalo/enregistrement/enregistrement.log
-StandardError=append:/home/kalo/enregistrement/enregistrement.log
+StandardOutput=append:/home/kalo/enregistrement/out
+StandardError=append:/home/kalo/enregistrement/err
 
 [Install]
 WantedBy=multi-user.target
