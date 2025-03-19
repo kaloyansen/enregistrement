@@ -1,0 +1,16 @@
+[Unit]
+Description=auto-recording midi
+After=network.target
+
+[Service]
+ExecStart=/yocto/enregistrement/bin/enregistrement.sh
+User=kalo
+Group=kalo
+WorkingDirectory=/home/kalo/enregistrement
+# Restart=always
+Environment="XDG_RUNTIME_DIR=/run/user/$(id -u kalo)"
+StandardOutput=append:/var/log/enregistrement.out
+StandardError=append:/var/log/enregistrement.err
+
+[Install]
+WantedBy=multi-user.target

@@ -1,16 +1,16 @@
 [Unit]
-Description=auto-recording midi
+Description=auto-connect
 After=network.target
 
 [Service]
-ExecStart=/yocto/enregistrement/enregistrement.sh
+ExecStart=/yocto/enregistrement/bin/reconnect.sh
 User=kalo
 Group=kalo
 WorkingDirectory=/home/kalo/enregistrement
 # Restart=always
 Environment="XDG_RUNTIME_DIR=/run/user/$(id -u kalo)"
-StandardOutput=append:/home/kalo/enregistrement/out
-StandardError=append:/home/kalo/enregistrement/err
+StandardOutput=append:/var/log/reconnect.out
+StandardError=append:/var/log/reconnect.err
 
 [Install]
 WantedBy=multi-user.target

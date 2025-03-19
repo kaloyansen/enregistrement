@@ -1,0 +1,10 @@
+#!/usr/bin/env sh
+
+NAME=$1
+VOLUME=400
+
+timidity --volume=$VOLUME $NAME.mid -Ow -o $NAME.wav
+lame $NAME.wav $NAME.mp3
+rm $NAME.wav
+echo $NAME.mp3 created
+
