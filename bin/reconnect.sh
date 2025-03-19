@@ -18,3 +18,4 @@ while true; do
         sleep $SSH_DELAY
     fi
 done
+echo
