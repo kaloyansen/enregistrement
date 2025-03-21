@@ -1,5 +1,6 @@
 #!/bin/sh
 
+SERVICE_NAME=enregistrement
 MIDI_DEVICE=$(aconnect -l | grep "Roland Digital Piano" | grep client | awk '{print $2}')
 MIDI_DEVICE="${MIDI_DEVICE}0"
 OUTDIR="$HOME/$(basename "$0")"
@@ -10,6 +11,21 @@ STOP_NOTE=24
 MUSIC=`awk 'BEGIN { print 2^(1/12) }'`
 FREQ=1740
 
+monitor_midi_disconnect() {
+
+    while sleep 2; do
+
+        if ! aseqdump -l | grep -q "$MIDI_DEVICE"; then
+
+            echo midi device $MIDI_DEVICE unplugged ... stopping service ...
+            sudo systemctl stop $SERVICE_NAME.service
+            exit 0
+        fi
+    done
+}
+
+
+monitor_midi_disconnect&
 
 echo midi recording service start on device $MIDI_DEVICE...
 # aseqdump -p "$MIDI_DEVICE" | while read -r line; do
@@ -29,6 +45,7 @@ stdbuf -oL aseqdump -p "$MIDI_DEVICE" | grep --line-buffered "Note on" | while r
 
             sleep 0.03
             if echo "$line" | grep -q "Note on" && echo "$line" | grep -q "note $STOP_NOTE"; then
+
                 echo -n got signal ...
                 kill $RECORD_PID
 		rm -f $LAST_RECORD
@@ -39,7 +56,7 @@ stdbuf -oL aseqdump -p "$MIDI_DEVICE" | grep --line-buffered "Note on" | while r
 
                     pitch=$((RANDOM % 13 - 6))
 		    FREQ=$(awk -v f=$FREQ -v r="$MUSIC" -v s=$pitch 'BEGIN { printf "%.0f", f * (r ^ s) }')
-                    beep -f $FREQ -l 220
+                    beep -f $FREQ -l 220&
 		done
                 echo standby
                 break

@@ -1,10 +1,67 @@
 #!/usr/bin/env sh
 
-NAME=$1
-VOLUME=400
+if [ "$#" -lt 1 ]; then
+    echo "usage: $0 <mifi_file_name> <instrument_number>"
+    exit 1
+fi
+
+MIDICSV=/yocto/midicsv/midicsv  
+CSVMIDI=/yocto/midicsv/csvmidi
+VOLUME=333
+NAME=${1%.*}
+if [ -z "$2" ]; then
+
+    INSTRUMENT=4
+else
+
+    INSTRUMENT=$2
+fi
+
+modify_midi() {
+
+    inputfile="$1"
+    outputfile="$2"
+    instrument_number="$3"
+    if [ ! -f "$inputfile" ]; then
+
+	echo "error: file does not exist"
+	exit 1
+    fi
+
+    if [ -z "$instrument_number" ]; then
+
+	instrument_number=4
+    fi
+    program_line="1, 0, Program_c, 0, $instrument_number"
+    instrument_pattern="1, 0, Program_c, 0, [0-9]\{1,2\}"
+    if grep -q "$instrument_pattern" "$inputfile"; then
+
+	sed "s/$instrument_pattern/1, 0, Program_c, 0, $instrument_number/" "$inputfile" > "$outputfile"
+	echo replaced the instrument number with $instrument_number in $outputfile
+    else
+	sed '2a'"$program_line" "$inputfile" > "$outputfile"
+	echo inserted the program line in $outputfile
+    fi
+}
+
+
+$MIDICSV $NAME.mid > $NAME.csv
+
+echo edit $NAME.csv
+modify_midi $NAME.csv $NAME.csv.delme $INSTRUMENT
+
+# cp -v $NAME.csv.delme $NAME.csv
+#rm $NAME.csv.delme
+
+$CSVMIDI $NAME.csv.delme > $NAME.mid
 
 timidity --volume=$VOLUME $NAME.mid -Ow -o $NAME.wav
 lame $NAME.wav $NAME.mp3
-rm $NAME.wav
+# rm -f $NAME.wav $NAME.csv
 echo $NAME.mp3 created
 
+id3v2 -t "$NAME" -a "Kaloyan Krastev" -A "kaloyansen@gmail.com" -g "medieval" $NAME.mp3
+
+echo $NAME.mp3 annotated
+
+id3info $NAME.mp3

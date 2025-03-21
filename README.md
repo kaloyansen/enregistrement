@@ -1,11 +1,10 @@
 # enregistrement
 
+automatically record midi files when you touch the midi keyboard
+
 ```bash
-git clone git@github.com:kaloyansen/enregistrement
-cd enregistrement
-sudo cp enregistrement.service /usr/lib/systemd/system/enregistrement.service
 sudo usermod -aG audio $USER
-sudo systemctl daemon-reload
-sudo systemctl enable enregistrement
+git clone git@github.com:kaloyansen/enregistrement
+sudo enregistrement/bin/enable_service.sh
 
 ```
