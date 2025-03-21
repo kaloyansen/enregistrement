@@ -1,32 +1,30 @@
 #!/bin/sh
 
-SERVICE_NAME=enregistrement
-MIDI_DEVICE=$(aconnect -l | grep "Roland Digital Piano" | grep client | awk '{print $2}')
+APP_NAME=enregistrement
+MIDI_DEVICE=$(aconnect -l | grep "Piano" | grep client | awk '{print $2}')
 MIDI_DEVICE="${MIDI_DEVICE}0"
-OUTDIR="$HOME/$(basename "$0")"
-OUTDIR=$HOME/enregistrement
+OUTDIR=$HOME/$APP_NAME
 LAST_RECORD=$OUTDIR/last.mid
 mkdir -p $OUTDIR
 STOP_NOTE=24
 MUSIC=`awk 'BEGIN { print 2^(1/12) }'`
 FREQ=1740
 
-monitor_midi_disconnect() {
+stop_service_on_midi_disconnect() {
 
+    echo monitoring midi device $MIDI_DEVICE
     while sleep 2; do
 
         if ! aseqdump -l | grep -q "$MIDI_DEVICE"; then
 
-            echo midi device $MIDI_DEVICE unplugged ... stopping service ...
-            sudo systemctl stop $SERVICE_NAME.service
-            exit 0
+            echo midi device $MIDI_DEVICE unplugged ... try to stop service ...
+	    sudo systemctl stop $APP_NAME.service
+	    exit 0
         fi
     done
 }
 
-
-monitor_midi_disconnect&
-
+stop_service_on_midi_disconnect&
 echo midi recording service start on device $MIDI_DEVICE...
 # aseqdump -p "$MIDI_DEVICE" | while read -r line; do
 stdbuf -oL aseqdump -p "$MIDI_DEVICE" | grep --line-buffered "Note on" | while read -r line; do

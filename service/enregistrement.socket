@@ -1,0 +1,9 @@
+[Unit]
+Description=midi device socket
+
+[Socket]
+ListenStream=/dev/snd/controlC0
+Accept=yes
+
+[Install]
+WantedBy=sockets.target
