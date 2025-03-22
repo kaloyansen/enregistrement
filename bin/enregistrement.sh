@@ -1,14 +1,12 @@
 #!/bin/sh
 
+MIDI_ID="0582:01f1"
 APP_NAME=enregistrement
-OUTDIR=$HOME/$APP_NAME
-LAST_RECORD=$OUTDIR/last.mid
-mkdir -p $OUTDIR
+MIDI_DIRECTORY=$HOME/$APP_NAME
+LAST_RECORD=$MIDI_DIRECTORY/last.mid
 STOP_NOTE=24
 MUSIC=`awk 'BEGIN { print 2^(1/12) }'`
 FREQ=1740
-
-MIDI_ID="0582:01f1"
 
 device_is_connected() {
 
@@ -47,7 +45,7 @@ dump_sequence() {
 
 	    now=$(date +%Y%m%d%H%M%S)
 	    echo -n $now starting a new recording...
-	    OUTFILE="$OUTDIR/$now.mid"
+	    OUTFILE="$MIDI_DIRECTORY/$now.mid"
 	    arecordmidi -p "$MIDI_DEVICE" "$OUTFILE" &
 	    RECORD_PID=$!
 	    echo record pid $RECORD_PID
@@ -67,6 +65,7 @@ dump_sequence() {
 }
 
 
+mkdir -p $MIDI_DIRECTORY
 get_midi_device
 echo midi recording service start on device $MIDI_DEVICE ...
 device_is_connected
