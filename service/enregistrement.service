@@ -1,6 +1,7 @@
 [Unit]
 Description=auto-recording midi
-After=network.target
+After=sound.target
+#After=network.target
 
 [Service]
 ExecStart=/yocto/enregistrement/bin/enregistrement.sh

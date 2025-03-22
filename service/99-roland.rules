@@ -1,2 +1,0 @@
-ACTION=="bind", SUBSYSTEM=="usb", ATTRS{idVendor}=="0582", ATTRS{idProduct}=="01f1", RUN+="/usr/bin/systemctl restart enregistrement.service"
-

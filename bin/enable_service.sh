@@ -24,5 +24,4 @@ echo -n restart reconnect ...
 systemctl restart reconnect
 systemctl enable reconnect 
 echo done
-#systemctl status enregistrement
-#systemctl status enregistrement
+
