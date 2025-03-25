@@ -1,16 +1,21 @@
 #!/bin/sh
+#
+# automatic midi record
+# code by Kaloyan Krastev kaloyansen@gmail.com
+#
+# configuration: 
+MIDI_KEYBOARD_ID="0582:01f1" # see lsusb
+RECORD_DIRECTORY=$HOME/enregistrment
+STOP_NOTE=24 # push first octave C (do) to save recording
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
-MIDI_ID="0582:01f1"
-APP_NAME=enregistrement
-MIDI_DIRECTORY=$HOME/$APP_NAME
-LAST_RECORD=$MIDI_DIRECTORY/last.mid
-STOP_NOTE=24
+LAST_RECORD=$RECORD_DIRECTORY/last.mid
 MUSIC=`awk 'BEGIN { print 2^(1/12) }'`
 FREQ=1740
 
 device_is_connected() {
 
-    lsusb | grep -q "$MIDI_ID"
+    lsusb | grep -q "$MIDI_KEYBOARD_ID"
     return $?
 }
 
@@ -21,10 +26,9 @@ get_midi_device() {
 
 save_midi() {
 
-    echo -n killing $1
-    kill $1 2>/dev/null && echo $1 is dead || echo cannot kill $1
+    echo -n killing $1 ...
+    kill $1 2>/dev/null && echo $1 is dead, record saved to $2 || echo error: cannot kill $1
     rm -f $LAST_RECORD
-    echo recording saved to $2
     ln -s $2 $LAST_RECORD
     echo -n alert ...
     for i in $(seq 8); do
@@ -33,6 +37,7 @@ save_midi() {
 	FREQ=$(awk -v f=$FREQ -v r="$MUSIC" -v s=$pitch 'BEGIN { printf "%.0f", f * (r ^ s) }')
 	beep -f $FREQ -l 220&
     done
+    echo done
 }
 
 dump_sequence() {
@@ -45,11 +50,10 @@ dump_sequence() {
 
 	    now=$(date +%Y%m%d%H%M%S)
 	    echo -n $now starting a new recording...
-	    OUTFILE="$MIDI_DIRECTORY/$now.mid"
-	    arecordmidi -p "$MIDI_DEVICE" "$OUTFILE" &
-	    RECORD_PID=$!
-	    echo record pid $RECORD_PID
-	    echo press note $STOP_NOTE to stop recording
+	    OUTFILE="$RECORD_DIRECTORY/$now.mid"
+	    arecordmidi -p "$MIDI_DEVICE" "$OUTFILE" & RECORD_PID=$!
+	    echo -n started record with process id $RECORD_PID ...
+	    echo press note $STOP_NOTE to save
 	    while read -r line; do
 
 		if echo "$line" | grep -q "Note on" && echo "$line" | grep -q "note $STOP_NOTE"; then
@@ -65,7 +69,7 @@ dump_sequence() {
 }
 
 
-mkdir -p $MIDI_DIRECTORY
+mkdir -p $RECORD_DIRECTORY
 get_midi_device
 echo midi recording service start on device $MIDI_DEVICE ...
 device_is_connected
@@ -81,14 +85,20 @@ while true; do
 	    echo -n killing $DUMPID ...
 	    kill $DUMPID 2>/dev/null && echo $DUMPID is dead || echo cannot kill $DUMPID 
 	    DUMPID=0
+	else
+
+	    x="waiting for midi device connection"
 	fi
     else
 
 	if [ "$DUMPID" -eq 0 ]; then
 
-            dump_sequence&
-	    DUMPID=$!
-	    echo started dumping $MIDI_ID with pid $DUMPID
+            dump_sequence & DUMPID=$!
+	    echo -n started listening on $MIDI_KEYBOARD_ID ...
+	    echo process id $DUMPID
+	else
+
+	    x="continue listening midi signal"
 	fi
     fi
     sleep 3
