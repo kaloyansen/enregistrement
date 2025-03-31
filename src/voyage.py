@@ -1,37 +1,37 @@
 #!/usr/bin/env python
 
 import os
-import mido
-from mingus.midi import fluidsynth
-# import fluidsynth
+from mido import Message, MidiFile
+import fluidsynth
 import subprocess
 from pydub import AudioSegment
 import argparse
 
-# from pydub.utils import which
 
-# AudioSegment.converter = which("ffmpeg")
-
-
-
-
-def change_midi_instrument(midi_file, output_midi, program_number=0):
+def modify_midi_instrument(midi_in, midi_out, program_number = 0):
     """Change the instrument (program number) in a MIDI file."""
-    mid = mido.MidiFile(midi_file)
-    
+    mid = MidiFile(midi_in)
     for track in mid.tracks:
-        for msg in track:
-            if msg.type == 'program_change':
-                msg.program = program_number  # Change instrument
 
-    mid.save(output_midi)
+        for i, msg in enumerate(track):
+
+            if msg.type == 'program_change':  
+                # modify existing program
+                msg.program = program_number
+            elif msg.type == 'note_on' or msg.type == 'note_off':
+
+                if i == 0 or (i > 0 and track[i-1].type != 'program_change'):
+                    # insert a program change before the first note
+                    track.insert(i, Message('program_change', program=program_number, channel=msg.channel, time=0))
+
+    mid.save(midi_out)
 
 def midi_to_mp3(midi_file, soundfont, mp3_file, title = "unknown", artist = "unknown", genre = "unknown"):
     """Convert MIDI to MP3 using FluidSynth and add metadata."""
     wav_file = "temp.wav"
-    subprocess.run(["fluidsynth", "-ni", soundfont, midi_file, "-F", wav_file, "-r", "44100"], check=True)
+    subprocess.run(["fluidsynth", "-ni", soundfont, midi_file, "-F", wav_file, "-r", "44100"], check = True)
     audio = AudioSegment.from_wav(wav_file)
-    audio.export(mp3_file, format="mp3", tags={"title": title, "artist": artist, "genre": genre})
+    audio.export(mp3_file, format = "mp3", tags = {"title": title, "artist": artist, "genre": genre})
     subprocess.run(["rm", wav_file])
 
 
@@ -42,49 +42,76 @@ def increase_volume(input_mp3, output_mp3, db_increase = 5):
     louder_audio.export(output_mp3, format = "mp3")
 
 
-def dump_font(font_path):
+def get_instrument(synth, font, bank, program):
 
-    fluidsynth.init(font_path)
-    for bank in range(2):  # 128 banks
+    synth.program_select(0, font, bank, program)
+    instrument = synth.channel_info(0)[3]
+    return instrument
 
-        for program in range(128):  # 128 programs per bank
 
-            instrument_name = fluidsynth.get_instrument_name(bank, program) # f"program {program} (no name)"
-            if instrument_name:
+def dump_font(fs, sfid):
 
-                print(f"Bank: {bank}, Program: {program}, Instrument: {instrument_name}")
+    for bank in range(1):
+
+        for program in range(128):
+
+            #fs.program_select(0, sfid, bank, program)
+            #instrument = fs.channel_info(0)[3]
+            instrument = get_instrument(fs, sfid, bank, program)
+            if instrument != 'Gun Shot':
+
+                print(bank, program, instrument, end = " ")
+    print()
 
 
 def main():
 
-    parser = argparse.ArgumentParser(description = "a command-line midi to mp3 converter written in python")
-    parser.add_argument('-m', '--midinput', type=str, default = 'medi.mid', help="midi input file")
-    parser.add_argument('-i', '--instrument', type = int, default = 42, help = "midi program number (default is 42)")
-    parser.add_argument('-v', '--volume', type = int, default = 10, help = "mp3 volume (default is 10)")
+    default_font = '/usr/share/soundfonts/FluidR3_GM.sf2'
+    default_midi = 'last.mid'
+    default_inst = 66
+    default_volume = 10
+    parser = argparse.ArgumentParser(description = "a command-line utility to convert midi to mp3 written in python")
+    parser.add_argument('-m', '--midinput',   type = str, default = default_midi,   help = f"midi input file (default is {default_midi})")
+    parser.add_argument('-f', '--font',       type = str, default = default_font,   help = f"sound font pathname (default is {default_font})")
+    parser.add_argument('-i', '--instrument', type = int, default = default_inst,   help = f"midi program number (default is {default_inst})")
+    parser.add_argument('-v', '--volume',     type = int, default = default_volume, help = f"mp3 volume (default is {default_volume})")
+    parser.add_argument('-p', '--programs',                action = "store_true",   help = "list midi programs")
     args = parser.parse_args()
 
     print(f"instrument: {args.instrument}, input: {args.midinput}")
 
-    midinput = args.midinput
-    jack = os.path.splitext(midinput)
-    title = jack[0]
+    fs = fluidsynth.Synth()
+    # fs.start()
+    sfid = fs.sfload(args.font)
 
-    modified_midi = f"{title}.mid.aux"
-    mp3_out = f"{title}.mp3"
-    mp3_aux = f"{title}.mp3.aux"
-    soundfont = "/usr/share/soundfonts/FluidR3_GM.sf2"
+    if args.programs:
 
-    dump_font(soundfont)
+        dump_font(fs, sfid)
+        return
+    if not os.path.exists(args.midinput):
 
-    return
+        print(f"{args.midinput} not found\ni am dead")
+    else:
 
-    change_midi_instrument(midinput, modified_midi, program_number = args.instrument)
-    midi_to_mp3(modified_midi, soundfont, mp3_aux,
-                title  = title,
-                artist = "Kaloyan Krastev")
-    increase_volume(mp3_aux, mp3_out, args.volume)
+        midinput = args.midinput
+        jack = os.path.splitext(midinput)
+        title = jack[0]
 
-    print(f"converted {midinput} to {mp3_out} with instrument {args.instrument}.")
+        midi_aux = f"{title}.mid.aux"
+        mp3_out = f"{title}.mp3"
+        mp3_aux = f"{title}.mp3.aux"
+
+        modify_midi_instrument(midinput, midi_aux, args.instrument)
+        midi_to_mp3(midi_aux,
+                    args.font,
+                    mp3_aux,
+                    title  = title,
+                    artist = 'Kaloyan Krastev',
+                    genre = 'medievale')
+        increase_volume(mp3_aux, mp3_out, args.volume)
+        instrument = get_instrument(fs, sfid, 0, args.instrument)
+        print("=========================================================================")
+        print(f"synthesized {mp3_out} from {midinput} with {args.instrument} {instrument}")
 
 
 if __name__ == "__main__":
