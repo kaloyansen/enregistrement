@@ -4,14 +4,21 @@
 # code by Kaloyan Krastev kaloyansen@gmail.com
 #
 # configuration: 
+
 MIDI_KEYBOARD_ID="0582:01f1" # see lsusb
-RECORD_DIRECTORY=$HOME/enregistrment
+RECORD_DIRECTORY=$HOME/enregistrement
 STOP_NOTE=24 # push first octave C (do) to save recording
+
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 LAST_RECORD=$RECORD_DIRECTORY/last.mid
 MUSIC=`awk 'BEGIN { print 2^(1/12) }'`
 FREQ=1740
+
+grep() {
+
+    command grep -i "$@"
+}
 
 device_is_connected() {
 
@@ -21,7 +28,7 @@ device_is_connected() {
 
 get_midi_device() {
 
-    export MIDI_DEVICE=$(aseqdump -l | grep "Piano" | awk '{print $1}')
+    export MIDI_DEVICE=$(aseqdump -l | grep "piano" | awk '{print $1}')
 }
 
 save_midi() {
@@ -44,9 +51,10 @@ dump_sequence() {
 
     get_midi_device
     echo enter dump sequence loop on $MIDI_DEVICE
-    stdbuf -oL aseqdump -p "$MIDI_DEVICE" | grep --line-buffered "Note on" | while read -r line; do
+    stdbuf -oL aseqdump -p "$MIDI_DEVICE" | grep --line-buffered "note on" | while read -r line; do
 
-        if echo "$line" | grep -q "Note on"; then
+#	if echo "$line" | grep -qi "note on" && ! echo "$line" | grep -q "note $STOP_NOTE"; then
+	if ! echo "$line" | grep -q "note $STOP_NOTE"; then
 
 	    now=$(date +%Y%m%d%H%M%S)
 	    echo -n $now starting a new recording...
@@ -56,7 +64,8 @@ dump_sequence() {
 	    echo press note $STOP_NOTE to save
 	    while read -r line; do
 
-		if echo "$line" | grep -q "Note on" && echo "$line" | grep -q "note $STOP_NOTE"; then
+#		if echo "$line" | grep -q "Note on" && echo "$line" | grep -q "note $STOP_NOTE"; then
+		if echo "$line" | grep -q "note $STOP_NOTE"; then
 
 		    echo -n got stop signal ...
 		    save_midi $RECORD_PID $OUTFILE 

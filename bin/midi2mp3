@@ -1,21 +1,37 @@
 #!/usr/bin/env sh
+#
+# code:    Kaloyan Krastev kaloyansen@gmail.com
+# purpose: convert midi to mp3
+# requirements: midicsv, csvmidi, id3v2, lame
+
+LAME=/usr/bin/lame
+ID3V2=/usr/bin/id3v2
+ID3INFO=/usr/bin/id3info
+MIDICSV=/yocto/midicsv/midicsv  
+CSVMIDI=/yocto/midicsv/csvmidi
+TIMIDITY=/usr/bin/timidity
+
+VOLUME=333
+INSTRUMENT=4
 
 if [ "$#" -lt 1 ]; then
-    echo "usage: $0 <mifi_file_name> <instrument_number>"
+
+    echo convert midi to mp3
+    echo "usage: $0 <mifi_file_name> [instrument_number=$INSTRUMENT] [volume_level=$VOLUME]"
+    echo error: $0 needs input midi file 
     exit 1
 fi
 
-MIDICSV=/yocto/midicsv/midicsv  
-CSVMIDI=/yocto/midicsv/csvmidi
-VOLUME=333
-NAME=${1%.*}
-if [ -z "$2" ]; then
-
-    INSTRUMENT=4
-else
+if [ ! -z "$2" ]; then
 
     INSTRUMENT=$2
 fi
+if [ ! -z "$3" ]; then
+
+    VOLUME=$3
+fi
+
+NAME=${1%.*}
 
 modify_midi() {
 
@@ -55,13 +71,13 @@ modify_midi $NAME.csv $NAME.csv.delme $INSTRUMENT
 
 $CSVMIDI $NAME.csv.delme > $NAME.mid
 
-timidity --volume=$VOLUME $NAME.mid -Ow -o $NAME.wav
-lame $NAME.wav $NAME.mp3
+$TIMIDITY --volume=$VOLUME $NAME.mid -Ow -o $NAME.wav
+$LAME $NAME.wav $NAME.mp3
 # rm -f $NAME.wav $NAME.csv
 echo $NAME.mp3 created
 
-id3v2 -t "$NAME" -a "Kaloyan Krastev" -A "kaloyansen@gmail.com" -g "medieval" $NAME.mp3
+$ID3V2 -t "$NAME" -a "Kaloyan Krastev" -A "kaloyansen@gmail.com" -g "medieval" $NAME.mp3
 
 echo $NAME.mp3 annotated
 
-id3info $NAME.mp3
+$ID3INFO $NAME.mp3
