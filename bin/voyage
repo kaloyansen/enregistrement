@@ -1,0 +1,6 @@
+#!/usr/bin/env sh
+
+ENROOT=/yocto/enregistrement
+source $ENROOT/venv/bin/activate
+$ENROOT/src/voyage.py $@
+deactivate
