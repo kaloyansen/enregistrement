@@ -66,7 +66,11 @@ def dump_font(fs, sfid):
 
 def main():
 
-    default_font = os.getenv("FLUID_SF2")
+    default_font = os.getenv('FLUID_SF2', 0)
+    if ! default_font:
+
+        print('cannot find sound font\ni am dead')
+        return
     default_midi = 'last.mid'
     default_inst = 66
     default_volume = 10
